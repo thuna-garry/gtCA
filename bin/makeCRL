@@ -1,0 +1,25 @@
+#! /bin/sh
+
+type="ca"
+cn=""
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+export rootDir
+export type
+export cn
+
+openssl ca \
+    -config      $rootDir/conf/${type}.cnf    \
+    -gencrl                                   \
+    -out         $rootDir/crl/crl.pem         \
+
+chmod 644 $rootDir/crl/crl.pem
+
+echo
+echo "CRL written to"
+echo "    $rootDir/crl/crl.pem"
+echo
+
+

@@ -1,0 +1,257 @@
+#
+# OpenSSL configuration file.
+#
+
+# global constants
+basename	= $ENV::caName
+dir		= $ENV::rootDir # establish working directory
+type		= $ENV::type	# server | client | intermediate
+cn		= $ENV::cn	# cn of certificate
+revision	= 003		# my own revision number for this conf file
+
+
+###################################################################################################
+[ ca ]
+###################################################################################################
+default_ca	= CA_DEFAULT
+
+
+#---------------------------
+[ CA_DEFAULT ]
+#---------------------------
+new_certs_dir		= $dir/$type/certs           # default place for new certs.
+database		= $dir/db/cert_index.txt     # database index file
+serial			= $dir/db/cert_serial.txt    # the current serial number
+crl_dir			= $dir/crl                   # where the issued crl are kept
+
+certificate		= $dir/ca/certs/$basename-cacert.pem   # the CA certificate
+private_key		= $dir/ca/keys/$basename-cakey.pem     # the private key
+
+default_days		= 1095		# how long to certify for
+default_md		= md5		# use public key default message digest
+
+preserve		= no		# keep passed DN ordering
+email_in_dn		= no		# leave email as part of DN?
+nameopt			= ca_default	# built-in value
+certopt			= ca_default	# built-in value
+policy			= ca_policy	# policy section name
+
+x509_extensions		= v3_sign_$type		# extensions to add to user certs when signing
+unique_subject		= yes			# valid cert entries in the db must have unique subjects
+copy_extensions		= copy			# extensions in req not already present are copied to cert
+
+crl			= $dir/crl/crl.pem		# the current CRL
+crlnumber		= $dir/crl/crl_serial.txt	# text file containing the next CRL number to use in hex
+default_crl_days	= 30				# how long before next CRL
+crl_extensions		= crl_v2_extensions		# extensions to add to a CRL (section presence forces V2 crl)
+
+
+#---------------------------
+[ ca_policy ]
+#---------------------------
+# The policy section consists of a set of variables corresponding to certificate DN fields.
+# If the value is
+#  match    then the field value must match the same field in the CA certificate
+#  supplied then it must be present
+#  optional then it may be present
+# Any fields not mentioned in the policy section are silently deleted, unless the -preserveDN
+# option is set but this can be regarded more of a quirk than intended behaviour.
+
+commonName				= supplied
+organizationalUnitName			= optional
+organizationName			= match
+countryName				= match
+emailAddress				= optional
+
+
+###################################################################################################
+[ req ]
+###################################################################################################
+default_bits				= 2048			# Size of keys
+default_keyfile				= key.pem		# name of generated keys
+default_md				= md5			# message digest algorithm
+string_mask				= nombstr		# permitted characters
+distinguished_name			= req_distinguished_name
+attributes                              = req_attributes
+req_extensions				= v3_req_$type		# extensions for all requests
+x509_extensions				= v3_sign_ca		# extentions for self signed cert
+
+# Passwords for private keys if not present they will be prompted for
+# input_password = secret
+# output_password = secret
+
+
+#---------------------------
+[ req_distinguished_name ]
+#---------------------------
+# Variable name			Prompt string
+#-------------------------	----------------------------------
+organizationName		= Organization Name (company)
+organizationalUnitName		= Organizational Unit Name (department, division)
+localityName			= Locality Name (city, district)
+stateOrProvinceName		= State or Province Name (full name)
+countryName			= Country Name (2 letter code)
+countryName_min			= 2
+countryName_max			= 2
+commonName			= Common Name (hostname, IP, or person name)
+commonName_max			= 64
+emailAddress			= Email Address
+emailAddress_max		= 40
+
+# Default values for the above, for consistency and less typing.
+# Variable name			Value
+#------------------------	------------------------------
+organizationName_default	= $ENV::organization
+organizationalUnitName_default	= $ENV::organizationalUnit
+localityName_default		= $ENV::city
+stateOrProvinceName_default	= $ENV::state
+countryName_default		= $ENV::country
+
+
+#---------------------------
+[ req_attributes ]
+#---------------------------
+# typically these may contain the challengePassword or unstructuredName types.
+# they are currently ignored by OpenSSL's request signing utilities but some CAs might want them.
+
+challengePassword		= A challenge password
+challengePassword_min		= 4
+challengePassword_max		= 20
+
+
+################################################################################
+# ca extensions
+################################################################################
+
+#---------------------------
+[ v3_req_ca ]
+#---------------------------
+basicConstraints	= CA:TRUE
+subjectKeyIdentifier	= hash
+keyUsage		= keyCertSign, cRLSign
+
+nsCertType		= sslCA, emailCA	# some might want this also
+nsComment		= Root CA Certificate: openssl.cnf revision $revision
+
+
+#---------------------------
+[ v3_sign_ca ]
+#---------------------------
+# used during self-signing (ie when "openssl req -x509" is used)
+
+authorityKeyIdentifier	= keyid,issuer:always
+#issuerAltName		= issuer:copy		# copy subject details
+subjectAltName		= email:$ENV::caEmail	# include email address in subject alt name
+
+
+################################################################################
+# server extensions
+################################################################################
+
+#---------------------------
+[ v3_req_server ]
+#---------------------------
+basicConstraints        = CA:FALSE
+subjectKeyIdentifier    = hash
+keyUsage		= digitalSignature, keyEncipherment
+extendedKeyUsage	= serverAuth,OCSPSigning
+
+nsCertType		= server
+nsComment		= Server Certificate: openssl.cnf revision $revision
+
+subjectAltName  = @alt_names_server
+
+[ alt_names_server ]
+DNS.1 = $cn
+
+
+#---------------------------
+[ v3_sign_server ]
+#---------------------------
+# extensions added when 'ca' signs a request (except self signed)
+# note: these do not override items by same name which are already in request
+
+authorityKeyIdentifier	= keyid,issuer:always	# PKIX recommend harmless for all certificates
+issuerAltName		= issuer:copy		# copy subject details
+subjectAltName		= email:copy		# include email address in subject alt name
+
+# OID's required for Windows 802.1x see http://support.microsoft.com/kb/814394/en-us
+extendedKeyUsage = 1.3.6.1.5.5.7.3.1            # xp server OID
+
+# crl/OCSP
+authorityInfoAccess     = OCSP;URI:http://$ENV::ocspHostFQDN
+
+
+################################################################################
+# client extensions
+################################################################################
+
+#---------------------------
+[ v3_req_client ]
+#---------------------------
+basicConstraints        = CA:FALSE
+subjectKeyIdentifier    = hash
+keyUsage		= digitalSignature
+extendedKeyUsage	= clientAuth,OCSPSigning
+
+nsCertType		= client, email
+nsComment		= Client Certificate: openssl.cnf revision $revision
+
+subjectAltName  = @alt_names_client
+
+[ alt_names_client ]
+email.1 = $cn
+
+#---------------------------
+[ v3_sign_client ]
+#---------------------------
+# extensions added when 'ca' signs a request
+# note: these do not override items by same name which are already in request
+
+authorityKeyIdentifier	= keyid,issuer:always	# PKIX recommend harmless for all certificates
+issuerAltName		= issuer:copy		# copy subject details
+subjectAltName		= email:copy		# include email address in subject alt name
+
+# OID's required for Windows 802.1x see http://support.microsoft.com/kb/814394/en-us
+extendedKeyUsage = 1.3.6.1.5.5.7.3.2            # xp client OID
+
+# crl/OCSP
+authorityInfoAccess     = OCSP;URI:http://$ENV::ocspHostFQDN
+
+
+################################################################################
+# intermediate  extensions
+################################################################################
+
+#---------------------------
+[ v3_req_intermediate ]
+#---------------------------
+basicConstraints        = CA:TRUE
+subjectKeyIdentifier    = hash
+keyUsage                = keyCertSign, cRLSign
+
+nsCertType		= sslCA, emailCA	# some might want this also
+nsComment		= CA Certificate: openssl.cnf revision $revision
+
+#---------------------------
+[ v3_sign_intermediate ]
+#---------------------------
+# extensions added when 'ca' signs a request
+# note: these do not override items by same name which are already in request
+
+authorityKeyIdentifier	= keyid,issuer:always
+issuerAltName		= issuer:copy		# copy subject details
+subjectAltName		= email:copy		# include email address in subject alt name
+
+# crl/OCSP
+authorityInfoAccess     = OCSP;URI:http://$ENV::ocspHostFQDN
+
+
+###################################################################################################
+[ crl_v2_extensions ]
+###################################################################################################
+# only issuerAltName and authorityKeyIdentifier make any sense in a CRL.
+
+# issuerAltName=issuer:copy
+authorityKeyIdentifier=keyid,issuer:always
+

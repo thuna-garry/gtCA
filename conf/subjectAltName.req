@@ -1,0 +1,8 @@
+
+subjectAltName	= @alt_names
+
+[ alt_names ]
+DNS.1 = kb.example.com
+DNS.2 = helpdesk.example.com
+DNS.3 = systems.example.com
+

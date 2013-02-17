@@ -1,0 +1,35 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+case "$type" in
+    server | client | intermediate) ;;
+    *) echo  "$0  <server|client|intermediate>  <cn>"; exit ;;
+esac
+
+export rootDir
+export type
+export cn
+
+openssl req                                                   \
+	-config      $rootDir/conf/${type}.cnf                \
+	-new                                                  \
+	-newkey      rsa:2048                                 \
+	-nodes                                                \
+	-subj        "/CN=${cn}/OU=${organizationalUnit} - ${type}s/O=${organization}/C=${country}"  \
+	-keyout      $rootDir/${type}/keys/${cn}-key.pem      \
+	-out         $rootDir/${type}/requests/${cn}-req.pem  \
+
+chmod 400 $rootDir/${type}/keys/${cn}-key.pem
+chmod 400 $rootDir/${type}/requests/${cn}-req.pem
+
+echo
+echo "Request available at"
+echo "    $rootDir/${type}/requests/${cn}-req.pem"
+echo
+
+

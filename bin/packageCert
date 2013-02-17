@@ -1,0 +1,26 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+case "$type" in
+    server | client) ;;
+    *) echo  "$0  <server|client>  <cn>"; exit ;;
+esac
+
+tar cvzf $rootDir/${type}/dist/${cn}.tgz                           \
+    -C $rootDir/${type}/keys   ${cn}-key.pem                       \
+    -C $rootDir/${type}/certs  ${cn}-cert.pem                      \
+    -C $rootDir/ca/certs       $( cd $rootDir/ca/certs; ls *.pem)  \
+    > /dev/null
+
+chmod 400 $rootDir/${type}/dist/${cn}.tgz
+
+echo 
+echo "Distribution package available at"
+echo "   $rootDir/${type}/dist/${cn}.tgz"
+echo
+

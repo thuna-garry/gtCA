@@ -1,0 +1,72 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+case "$type" in
+    ca | root)
+        inPem=$rootDir/ca/certs/${cn}-cacert.pem
+        outP12=$rootDir/ca/certs/${cn}-cacert.p12
+        ;;
+    intermediate)
+        inPem=$rootDir/intermediate/certs/${cn}-cacert.pem
+        outP12=$rootDir/intermediate/certs/${cn}-cacert.pf12
+        ;;
+    server | client)
+        inPem=$rootDir/${type}/certs/${cn}-cert.pem
+        inKey=$rootDir/${type}/keys/${cn}-key.pem
+        outP12=$rootDir/${type}/certs/${cn}-cert.p12
+        ;;
+    *) echo  "$0  <ca|intermediate|server|client|>  <cn>"; exit ;;
+esac
+
+export rootDir
+export type
+export cn
+
+case "$type" in
+    server | client)
+	openssl pkcs12                \
+		-export               \
+		-clcerts              \
+		-name        $cn      \
+                -inkey       $inKey   \
+		-in          $inPem   \
+		-out         $outP12  \
+		-passout     pass:        
+	;;
+
+    intermediate)
+	openssl pkcs12                \
+		-export               \
+		-cacerts              \
+		-caname      "${organization} Intermediate CA"  \
+		-nokeys               \
+		-in          $inPem   \
+		-out         $outP12  \
+		-passout     pass:        
+	;;
+
+    ca | root)
+	openssl pkcs12                \
+		-export               \
+		-cacerts              \
+		-caname      "${organization} Root CA"  \
+		-nokeys               \
+		-in          $inPem   \
+		-out         $outP12  \
+		-passout     pass:        
+	;;
+esac
+   
+
+chmod 444 $outP12
+
+echo
+echo "PCKS12 certificate available at"
+echo "     $outP12"
+echo
+

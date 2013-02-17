@@ -1,0 +1,74 @@
+#! /bin/sh
+
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+if [ -z "caName" ]; then
+    echo "Error: set the values in $rootDir/bin/vars prior to using any of these utilities."
+    exit
+fi
+
+echo building CA rooted at $rootDir
+
+rm -rf $rootDir/db;                    mkdir -pm 700 $rootDir/db
+rm -rf $rootDir/crl;                   mkdir -pm 700 $rootDir/crl
+
+rm -rf $rootDir/ca/certs;              mkdir -pm 755 $rootDir/ca/certs
+rm -rf $rootDir/ca/keys;               mkdir -pm 600 $rootDir/ca/keys
+rm -rf $rootDir/ca/requests;           mkdir -pm 600 $rootDir/ca/requests
+
+rm -rf $rootDir/intermediate/requests; mkdir -pm 600 $rootDir/intermediate/requests
+rm -rf $rootDir/intermediate/certs;    mkdir -pm 755 $rootDir/intermediate/certs
+
+rm -rf $rootDir/server/requests;       mkdir -pm 600 $rootDir/server/requests
+rm -rf $rootDir/server/keys;           mkdir -pm 600 $rootDir/server/keys
+rm -rf $rootDir/server/certs;          mkdir -pm 755 $rootDir/server/certs
+rm -rf $rootDir/server/dist;           mkdir -pm 600 $rootDir/server/dist
+
+rm -rf $rootDir/client/requests;       mkdir -pm 600 $rootDir/client/requests
+rm -rf $rootDir/client/keys;           mkdir -pm 600 $rootDir/client/keys
+rm -rf $rootDir/client/certs;          mkdir -pm 755 $rootDir/client/certs
+rm -rf $rootDir/client/dist;           mkdir -pm 600 $rootDir/client/dist
+
+touch $rootDir/db/cert_index.txt;   chmod 600 $rootDir/db/cert_index.txt
+touch $rootDir/db/cert_serial.txt;  chmod 600 $rootDir/db/cert_serial.txt
+touch $rootDir/db/crl_serial.txt;   chmod 600 $rootDir/db/crl_serial.txt
+echo 100001 > $rootDir/db/cert_serial.txt
+echo   1001 > $rootDir/crl/crl_serial.txt
+
+export type=ca
+export rootDir
+
+openssl req                                              \
+    -config      $rootDir/conf/ca.cnf                    \
+    -new                                                 \
+    -newkey      rsa:2048                                \
+    -x509                                                \
+    -days        3650                                    \
+    -subj        "/CN=$cn/OU=${organizationalUnit}/O=${organization}/C=${country}"  \
+    -keyout      $rootDir/ca/keys/${caName}-cakey.pem    \
+    -out         $rootDir/ca/certs/${caName}-cacert.pem 
+
+
+# save as PFX (PKCS#12 format)
+openssl pkcs12                                       \
+    -export                                          \
+    -cacerts                                         \
+    -caname "${organization} Certificate Authority"  \
+    -nokeys                                          \
+    -nodes                                           \
+    -passin  pass:                                   \
+    -passout pass:                                   \
+    -in  $rootDir/ca/certs/${caName}-cacert.pem      \
+    -out $rootDir/ca/certs/${caName}-cacert.pfx                     
+
+#openssl pkcs12                        \
+#    -info                             \
+#    -noout                            \
+#    -in  ca/${caName}-cacert.pfx      
+
+chmod 400 $rootDir/ca/keys/${caName}-cakey.pem
+chmod 444 $rootDir/ca/certs/${caName}-cacert.pem
+chmod 444 $rootDir/ca/certs/${caName}-cacert.pfx
+

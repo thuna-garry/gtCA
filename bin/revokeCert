@@ -1,0 +1,23 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+case "$type" in
+    server | client | intermediate) ;;
+    *) echo  "$0  <server|client|intermediate>  <cn>"; exit ;;
+esac
+
+export type
+export cn
+export rootDir
+
+echo $rootDir/${type}/certs/${cn}-cert.pem
+openssl ca                                            \
+    -config  $rootDir/conf/${type}.cnf                \
+    -revoke  $rootDir/${type}/certs/${cn}-cert.pem    \
+
+

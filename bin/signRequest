@@ -1,0 +1,41 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+case "$type" in
+    server | client)
+        requestFile=$rootDir/${type}/requests/${cn}-req.pem
+        certFile=$rootDir/${type}/certs/${cn}-cert.pem
+        ;;
+
+    intermediate)
+        echo -n "requestFile (absolute path): ";  read requestFile
+        cn=`basename $requestFile -careq.pem` 
+        certFile=$rootDir/${type}/certs/${cn}-cacert.pem
+        ;;
+    *) echo  "$0  <server|client|intermediate>  <cn>"; exit ;;
+esac
+
+export rootDir
+export type
+export cn
+
+# Bug: the -infiles option must NOT precede any -out or -outdir option(s)
+openssl ca                                        \
+	-config      $rootDir/conf/ca.cnf         \
+	-verbose                                  \
+	-out         $certFile                    \
+	-outdir      $rootDir/${type}/certs       \
+	-infiles     $requestFile                              
+
+chmod 444 $certFile
+
+echo
+echo "Certificate available at"
+echo "    $certFile"
+echo
+

@@ -1,0 +1,200 @@
+# mozilla tech note
+# http://www.mozilla.org/projects/security/pki/nss/tech-notes/tn3.html
+
+
+There are 9 Cert types
+from mozilla tech note
+=======================
+EMAIL
+EMAIL_CA
+OBJECT_SIGNING
+OBJECT_SIGNING_CA
+SSL_CA
+SSL_CLIENT
+SSL_SERVER
+STATUS_RESPONDER	
+TIME_STAMP	
+
+
+
+openssl x509v3_config		There are 8 Key Usages from
+key usages			the mozilla tech note
+======================		===========================
+digitalSignature		DIGITAL_SIGNATURE
+nonRepudiation			NON_REPUDIATION
+keyEncipherment			KEY_ENCIPHERMENT
+dataEncipherment		DATA_ENCIPHERMENT
+keyAgreement			KEY_AGREEMENT
+keyCertSign			CERT_SIGN
+cRLSign				CRL_SIGN
+encipherOnly
+decipherOnly
+				GOVT_APPROVED
+
+bit positions from rfc3280 section 4.2.1.3
+===========================================================
+KeyUsage ::= BIT STRING {
+           digitalSignature        (0)
+           nonRepudiation          (1)
+           keyEncipherment         (2)
+           dataEncipherment        (3)
+           keyAgreement            (4)
+           keyCertSign             (5)
+           cRLSign                 (6)
+           encipherOnly            (7)
+           decipherOnly            (8) 
+
+Validating certificate key usage
+Sat May 19 13:26:32 2012 ++ Certificate has key usage  00fe, expects 00a0
+Sat May 19 13:26:32 2012 ++ Certificate has key usage  00fe, expects 0088
+
+fe =  0  1111  1110        00a0 = 0 1010 0000
+                           0088 = 0 1000 1000
+                            
+
+openssl extended key usage
+===========================================================
+ Value                  Meaning
+ -----                  -------
+ serverAuth             SSL/TLS Web Server Authentication.
+ clientAuth             SSL/TLS Web Client Authentication.
+ codeSigning            Code signing.
+ emailProtection        E-mail Protection (S/MIME).
+ timeStamping           Trusted Timestamping
+ msCodeInd              Microsoft Individual Code Signing (authenticode)
+ msCodeCom              Microsoft Commercial Code Signing (authenticode)
+ msCTLSign              Microsoft Trust List Signing
+ msSGC                  Microsoft Server Gated Crypto
+ msEFS                  Microsoft Encrypted File System
+ nsSGC                  Netscape Server Gated Crypto		
+
+
+
+#for the full meal deal see http://www.ietf.org/rfc/rfc3280.txt section 4.2.1.3
+
+Key usage extensions and extended key usage
+from an IBM page
+=========================================================================
+
+Key usage extensions
+
+Key usage extensions define the purpose of the public key contained in a certificate. You
+can use them to restrict the public key to as few or as many operations as needed. For
+example, if you have a key used only for signing or verifying a signature, enable the
+digital signature and/or non-repudiation extensions. Alternatively, if a key is used
+only for key management, enable key encipherment.
+
+The following table describes the key usage extensions available for certificates
+created using the CA process.
+
+Note The digital signature and data encipherment key usage extensions are enabled by
+default for all Internet certificates.
+
+	Digital signature
+		
+		Use when the public key is used with a digital signature mechanism
+		to support security services other than non-repudiation, certificate
+		signing, or CRL signing. A digital signature is often used for entity
+		authentication and data origin authentication with integrity.
+
+	Non-repudiation
+
+		Use when the public key is used to verify digital signatures used to
+		provide a non-repudiation service. Non-repudiation protects against the
+		signing entity falsely denying some action (excluding certificate or
+		CRL signing).
+
+	Key encipherment
+
+		Use when a certificate will be used with a protocol that encrypts keys. An
+		example is S/MIME enveloping, where a fast (symmetric) key is encrypted
+		with the public key from the certificate. SSL protocol also performs
+		key encipherment.
+
+	Data encipherment
+		
+		Use when the public key is used for encrypting user data, other than
+		cryptographic keys.
+
+	Key agreement
+
+		Use when the sender and receiver of the public key need to derive the
+		key without using encryption. This key can then can be used to encrypt
+		messages between the sender and receiver. Key agreement is typically
+		used with Diffie-Hellman ciphers.
+
+	Certificate signing
+
+		Use when the subject public key is used to verify a signature on
+		certificates. This extension can be used only in CA certificates.
+
+	CRL signing
+
+		Use when the subject public key is to verify a signature on revocation
+		information, such as a CRL.
+
+	Encipher only
+
+		Use only when key agreement is also enabled. This enables the public
+		key to be used only for enciphering data while performing key agreement.
+
+	Decipher only
+
+		Use only when key agreement is also enabled. This enables the public
+		key to be used only for deciphering data while performing key agreement.
+
+
+Extended key usage
+
+Extended key usage further refines key usage extensions. An extended key is either
+critical or non-critical. If the extension is critical, the certificate must be used
+only for the indicated purpose or purposes. If the certificate is used for another
+purpose, it is in violation of the CA's policy.
+
+If the extension is non-critical, it indicates the intended purpose or purposes of
+the key and may be used in finding the correct key/certificate of an entity that has
+multiple keys/certificates. The extension is then only an informational field and does
+not imply that the CA restricts use of the key to the purpose indicated. Nevertheless,
+applications that use certificates may require that a particular purpose be indicated
+in order for the certificate to be acceptable.
+
+If a certificate contains both a critical key usage field and a critical extended key
+usage field, both fields must be processed independently, and the certificate be used
+only for a purpose consistent with both fields. If there is no purpose consistent with
+both fields, the certificate must not be used for any purpose.
+
+Extended key                          Enable for these key usage extensions
+=================                     ==================================================
+TLS Web server authentication         Digital signature, key encipherment or key agreement
+
+TLS Web client authentication         Digital signature and/or key agreement
+
+Sign (downloadable) executable code   Digital signature
+
+Email protection                      Digital signature, non-repudiation,
+                                      and/or key encipherment or key agreement
+
+IPSEC End System (host or router)     Digital signature and/or key encipherment
+                                      or key agreement
+
+IPSEC Tunnel                          Digital signature and/or key encipherment 
+                                      or key agreement
+
+IPSEC User                            Digital signature and/or key encipherment 
+                                      or key agreement
+
+Timestamping                          Digital signature, non-repudiation.
+
+
+
+Examples of required key usage extensions
+
+Application             Required key usage extensions
+====================    ========================================
+SSL Client              Digital signature
+SSL Server              Key encipherment
+S/MIME Signing          Digital signature
+S/MIME Encryption       Key encipherment
+Certificate Signing     Certificate signing
+Object Signing          Digital signature
+

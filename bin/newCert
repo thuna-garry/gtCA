@@ -1,0 +1,8 @@
+#! /bin/sh
+
+binDir=`readlink -m $(dirname $0)`
+
+$binDir/genRequest  "$@" 
+$binDir/signRequest "$@" 
+$binDir/packageCert "$@"
+
