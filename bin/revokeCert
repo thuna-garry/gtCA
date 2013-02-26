@@ -1,11 +1,11 @@
 #! /bin/sh
 
-type="$1"
-cn="$2"
 binDir=`readlink -m $(dirname $0)`
 rootDir=`readlink -m $(dirname $binDir)`
 . $rootDir/conf/vars
 
+type="$1"
+cn="$2"
 case "$type" in
     server | client | intermediate) ;;
     *) echo  "$0  <server|client|intermediate>  <cn>"; exit ;;

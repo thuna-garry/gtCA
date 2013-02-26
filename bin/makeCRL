@@ -1,11 +1,11 @@
 #! /bin/sh
 
-type="ca"
-cn=""
 binDir=`readlink -m $(dirname $0)`
 rootDir=`readlink -m $(dirname $binDir)`
 . $rootDir/conf/vars
 
+type="ca"
+cn=""
 export rootDir
 export type
 export cn
