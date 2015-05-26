@@ -1,0 +1,68 @@
+#! /bin/sh
+
+type="$1"
+cn="$2"
+binDir=`readlink -m $(dirname $0)`
+rootDir=`readlink -m $(dirname $binDir)`
+. $rootDir/conf/vars
+
+if [ -z "caName" ]; then
+    echo "Error: set the values in $rootDir/bin/vars prior to using any of these utilities."
+    exit
+fi
+
+case "$type" in
+    server | client)
+        ca=
+        ;;
+    intermediate)
+        ca=ca
+        ;;
+    *)
+        echo  "$0  <server|client|intermediate>  <cn>"
+        exit
+        ;;
+esac
+
+export type
+export rootDir
+
+echo
+echo ============================================================
+echo = revoking cert
+echo ============================================================
+$binDir/revokeCert  "$@" 
+
+echo
+echo ============================================================
+echo = backing up req/cert/dist
+echo ============================================================
+mv -f $rootDir/${type}/requests/${cn}-${ca}req.pem  $rootDir/${type}/requests/${cn}-${ca}req.pem.`date +%Y-%m-%d_%H%M%S`  2>/dev/null
+mv -f $rootDir/${type}/certs/${cn}-${ca}cert.pem    $rootDir/${type}/certs/${cn}-${ca}cert.pem.`date +%Y-%m-%d_%H%M%S`    2>/dev/null
+mv -f $rootDir/${type}/dist/${cn}.tgz               $rootDir/${type}/dist/${cn}.tgz.`date +%Y-%m-%d_%H%M%S`               2>/dev/null
+
+echo
+echo ============================================================
+echo = generating new request
+echo ============================================================
+openssl req                                                        \
+        -new                                                       \
+	-key         $rootDir/${type}/keys/${cn}-${ca}key.pem      \
+	-subj        "/CN=${cn}/OU=${organizationalUnit} - ${type}s/O=${organization}/C=${country}"  \
+	-out         $rootDir/${type}/requests/${cn}-${ca}req.pem  \
+
+chmod 400 $rootDir/${type}/requests/${cn}-${ca}req.pem
+
+echo
+echo ============================================================
+echo = signing request
+echo ============================================================
+$binDir/signRequest "$@" 
+
+echo
+echo ============================================================
+echo = packaging cert
+echo ============================================================
+$binDir/packageCert "$@"
+
+
