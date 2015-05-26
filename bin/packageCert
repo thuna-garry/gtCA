@@ -22,10 +22,19 @@ tar cvzf $rootDir/${type}/dist/${cn}.tgz        \
     -C /tmp                    $stackFile       \
     > /dev/null
 
+
+mkdir /tmp/zip.$$
+cd /tmp/zip.$$
+tar xzf $rootDir/${type}/dist/${cn}.tgz
+zip $rootDir/${type}/dist/${cn}.zip *
+rm -rf /tmp/zip.$$
+
 chmod 400 $rootDir/${type}/dist/${cn}.tgz
+chmod 400 $rootDir/${type}/dist/${cn}.zip
 
 echo 
 echo "Distribution package available at"
 echo "   $rootDir/${type}/dist/${cn}.tgz"
+echo "   $rootDir/${type}/dist/${cn}.zip"
 echo
 
