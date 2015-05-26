@@ -6,6 +6,7 @@ rootDir=`readlink -m $(dirname $binDir)`
 
 type="ca"
 cn=""
+
 export rootDir
 export type
 export cn
